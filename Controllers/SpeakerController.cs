@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using ITB2203Application.Model;
 
 namespace ITB2203Application
 {
@@ -32,12 +33,5 @@ namespace ITB2203Application
             }
             return speaker;
         }
-    }
-
-    public class Speaker
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
     }
 }
