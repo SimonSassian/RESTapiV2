@@ -13,6 +13,7 @@ namespace ITB2203Application
         {
             new Attendee { Id = 1, EventId = 1, Name = "Alice", Email = "alice@example.com", RegistrationTime = DateTime.UtcNow },
             new Attendee { Id = 2, EventId = 2, Name = "Bob", Email = "bob@example.com", RegistrationTime = DateTime.UtcNow }
+            // Add more attendees as needed
         };
 
         [HttpGet]
@@ -30,6 +31,45 @@ namespace ITB2203Application
                 return NotFound();
             }
             return attendee;
+        }
+
+        [HttpPost]
+        public ActionResult<Attendee> CreateAttendee(Attendee attendee)
+        {
+            // Simulate auto-increment ID
+            attendee.Id = _attendees.Count + 1;
+            _attendees.Add(attendee);
+            return CreatedAtAction(nameof(GetAttendeeById), new { id = attendee.Id }, attendee);
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult UpdateAttendee(int id, Attendee updatedAttendee)
+        {
+            var attendee = _attendees.FirstOrDefault(a => a.Id == id);
+            if (attendee == null)
+            {
+                return NotFound();
+            }
+
+            attendee.EventId = updatedAttendee.EventId;
+            attendee.Name = updatedAttendee.Name;
+            attendee.Email = updatedAttendee.Email;
+            attendee.RegistrationTime = updatedAttendee.RegistrationTime;
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult DeleteAttendee(int id)
+        {
+            var attendee = _attendees.FirstOrDefault(a => a.Id == id);
+            if (attendee == null)
+            {
+                return NotFound();
+            }
+
+            _attendees.Remove(attendee);
+            return NoContent();
         }
     }
 }

@@ -32,5 +32,44 @@ namespace ITB2203Application
             }
             return ev;
         }
+
+        [HttpPost]
+        public ActionResult<Event> CreateEvent(Event newEvent)
+        {
+            // Simulate auto-increment ID
+            newEvent.Id = _events.Count + 1;
+            _events.Add(newEvent);
+            return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, newEvent);
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult UpdateEvent(int id, Event updatedEvent)
+        {
+            var existingEvent = _events.FirstOrDefault(e => e.Id == id);
+            if (existingEvent == null)
+            {
+                return NotFound();
+            }
+
+            existingEvent.SpeakerId = updatedEvent.SpeakerId;
+            existingEvent.Name = updatedEvent.Name;
+            existingEvent.Date = updatedEvent.Date;
+            existingEvent.Location = updatedEvent.Location;
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult DeleteEvent(int id)
+        {
+            var existingEvent = _events.FirstOrDefault(e => e.Id == id);
+            if (existingEvent == null)
+            {
+                return NotFound();
+            }
+
+            _events.Remove(existingEvent);
+            return NoContent();
+        }
     }
 }
