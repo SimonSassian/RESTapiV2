@@ -36,7 +36,6 @@ namespace ITB2203Application
         [HttpPost]
         public ActionResult<Event> CreateEvent(Event newEvent)
         {
-            // Simulate auto-increment ID
             newEvent.Id = _events.Count + 1;
             _events.Add(newEvent);
             return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, newEvent);
