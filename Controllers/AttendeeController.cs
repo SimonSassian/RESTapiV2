@@ -1,73 +1,88 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using ITB2203Application;
+using ITB2203Application.Model;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace ITB2203Application
+
+[ApiController]
+[Route("api/[controller]")]
+public class AttendeesController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class AttendeeController : ControllerBase
+    private readonly DataContext _context;
+
+    public AttendeesController(DataContext context)
     {
-        private readonly List<Attendee> _attendees = new List<Attendee>
-        {
-            new Attendee { Id = 1, EventId = 1, Name = "Alice", Email = "alice@example.com", RegistrationTime = DateTime.UtcNow },
-            new Attendee { Id = 2, EventId = 2, Name = "Bob", Email = "bob@example.com", RegistrationTime = DateTime.UtcNow }
-        };
+        _context = context;
+    }
 
-        [HttpGet]
-        public ActionResult<IEnumerable<Attendee>> GetAttendees()
+    [HttpGet]
+    public ActionResult<IEnumerable<Attendee>> GetAttendees(string? name = null)
+    {
+        var query = _context.Attendees!.AsQueryable();
+
+        if (name != null)
+            query = query.Where(x => x.Name != null && x.Name.ToUpper().Contains(name.ToUpper()));
+
+        return query.ToList();
+    }
+
+    [HttpGet("{id}")]
+    public ActionResult<TextReader> GetAttendee(int id)
+    {
+        var Attendee = _context.Attendees!.FirstOrDefault(x => x.Id == id);
+
+        if (Attendee == null)
         {
-            return _attendees;
+            return NotFound();
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<Attendee> GetAttendeeById(int id)
+        return Ok(Attendee);
+    }
+
+    [HttpPut("{id}")]
+    public IActionResult PutAttendee(int id, Attendee Attendee)
+    {
+        var dbAttendee = _context.Attendees!.AsNoTracking().FirstOrDefault(x => x.Id == Attendee.Id);
+        if (id != Attendee.Id || dbAttendee == null)
         {
-            var attendee = _attendees.FirstOrDefault(a => a.Id == id);
-            if (attendee == null)
-            {
-                return NotFound();
-            }
-            return attendee;
+            return NotFound();
         }
 
-        [HttpPost]
-        public ActionResult<Attendee> CreateAttendee(Attendee attendee)
+        _context.Update(Attendee);
+        _context.SaveChanges();
+
+        return NoContent();
+    }
+
+    [HttpPost]
+    public ActionResult<Attendee> PostAttendee(Attendee Attendee)
+    {
+        var dbExercise = _context.Attendees!.Find(Attendee.Id);
+        if (dbExercise == null)
         {
-            attendee.Id = _attendees.Count + 1;
-            _attendees.Add(attendee);
-            return CreatedAtAction(nameof(GetAttendeeById), new { id = attendee.Id }, attendee);
+            _context.Add(Attendee);
+            _context.SaveChanges();
+
+            return CreatedAtAction(nameof(GetAttendee), new { Id = Attendee.Id }, Attendee);
+        }
+        else
+        {
+            return Conflict();
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public IActionResult DeleteAttendee(int id)
+    {
+        var Attendee = _context.Attendees!.Find(id);
+        if (Attendee == null)
+        {
+            return NotFound();
         }
 
-        [HttpPut("{id}")]
-        public IActionResult UpdateAttendee(int id, Attendee updatedAttendee)
-        {
-            var attendee = _attendees.FirstOrDefault(a => a.Id == id);
-            if (attendee == null)
-            {
-                return NotFound();
-            }
+        _context.Remove(Attendee);
+        _context.SaveChanges();
 
-            attendee.EventId = updatedAttendee.EventId;
-            attendee.Name = updatedAttendee.Name;
-            attendee.Email = updatedAttendee.Email;
-            attendee.RegistrationTime = updatedAttendee.RegistrationTime;
-
-            return NoContent();
-        }
-
-        [HttpDelete("{id}")]
-        public IActionResult DeleteAttendee(int id)
-        {
-            var attendee = _attendees.FirstOrDefault(a => a.Id == id);
-            if (attendee == null)
-            {
-                return NotFound();
-            }
-
-            _attendees.Remove(attendee);
-            return NoContent();
-        }
+        return NoContent();
     }
 }

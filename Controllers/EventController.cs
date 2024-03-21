@@ -1,74 +1,86 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using ITB2203Application.Model;
 using Microsoft.AspNetCore.Mvc;
-using ITB2203Application.Model;
+using Microsoft.EntityFrameworkCore;
 
-namespace ITB2203Application
+[ApiController]
+[Route("api/[controller]")]
+public class EventsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class EventController : ControllerBase
+    private readonly DataContext _context;
+
+    public EventsController(DataContext context)
     {
-        private readonly List<Event> _events = new List<Event>
-        {
-            new Event { Id = 1, SpeakerId = 1, Name = "Introduction to AI", Date = new DateTime(2024, 3, 15), Location = "Virtual" },
-            new Event { Id = 2, SpeakerId = 2, Name = "Web Development Trends", Date = new DateTime(2024, 4, 10), Location = "Online" }
-        };
+        _context = context;
+    }
 
-        [HttpGet]
-        public ActionResult<IEnumerable<Event>> GetEvents()
+    [HttpGet]
+    public ActionResult<IEnumerable<Event>> GetEvents(string? name = null)
+    {
+        var query = _context.Events!.AsQueryable();
+
+        if (name != null)
+            query = query.Where(x => x.Name != null && x.Name.ToUpper().Contains(name.ToUpper()));
+
+        return query.ToList();
+    }
+
+    [HttpGet("{id}")]
+    public ActionResult<TextReader> GetEvent(int id)
+    {
+        var Event = _context.Events!.FirstOrDefault(x => x.Id == id);
+
+        if (Event == null)
         {
-            return _events;
+            return NotFound();
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<Event> GetEventById(int id)
+        return Ok(Event);
+    }
+
+    [HttpPut("{id}")]
+    public IActionResult PutEvent(int id, Event Event)
+    {
+        var dbEvent = _context.Events!.AsNoTracking().FirstOrDefault(x => x.Id == Event.Id);
+        if (id != Event.Id || dbEvent == null)
         {
-            var ev = _events.FirstOrDefault(e => e.Id == id);
-            if (ev == null)
-            {
-                return NotFound();
-            }
-            return ev;
+            return NotFound();
         }
 
-        [HttpPost]
-        public ActionResult<Event> CreateEvent(Event newEvent)
+        _context.Update(Event);
+        _context.SaveChanges();
+
+        return NoContent();
+    }
+
+    [HttpPost]
+    public ActionResult<Event> PostEvent(Event Event)
+    {
+        var dbExercise = _context.Events!.Find(Event.Id);
+        if (dbExercise == null)
         {
-            newEvent.Id = _events.Count + 1;
-            _events.Add(newEvent);
-            return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, newEvent);
+            _context.Add(Event);
+            _context.SaveChanges();
+
+            return CreatedAtAction(nameof(GetEvent), new { Id = Event.Id }, Event);
+        }
+        else
+        {
+            return Conflict();
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public IActionResult DeleteEvent(int id)
+    {
+        var Event = _context.Events!.Find(id);
+        if (Event == null)
+        {
+            return NotFound();
         }
 
-        [HttpPut("{id}")]
-        public IActionResult UpdateEvent(int id, Event updatedEvent)
-        {
-            var existingEvent = _events.FirstOrDefault(e => e.Id == id);
-            if (existingEvent == null)
-            {
-                return NotFound();
-            }
+        _context.Remove(Event);
+        _context.SaveChanges();
 
-            existingEvent.SpeakerId = updatedEvent.SpeakerId;
-            existingEvent.Name = updatedEvent.Name;
-            existingEvent.Date = updatedEvent.Date;
-            existingEvent.Location = updatedEvent.Location;
-
-            return NoContent();
-        }
-
-        [HttpDelete("{id}")]
-        public IActionResult DeleteEvent(int id)
-        {
-            var existingEvent = _events.FirstOrDefault(e => e.Id == id);
-            if (existingEvent == null)
-            {
-                return NotFound();
-            }
-
-            _events.Remove(existingEvent);
-            return NoContent();
-        }
+        return NoContent();
     }
 }
